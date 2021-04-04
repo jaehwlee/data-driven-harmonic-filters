@@ -108,6 +108,7 @@ class HarmonicSTFT(nn.Module):
 
     def forward(self, waveform):
         # stft
+        #print(waveform.size())
         spectrogram = self.spec(waveform)
 
         # to device
@@ -116,6 +117,7 @@ class HarmonicSTFT(nn.Module):
         # triangle filter
         harmonic_fb = self.get_harmonic_fb()
         harmonic_spec = torch.matmul(spectrogram.transpose(1, 2), harmonic_fb).transpose(1, 2)
+        #print(harmonic_spec.size())
 
         # (batch, channel, length) -> (batch, harmonic, f0, length)
         b, c, l = harmonic_spec.size()
@@ -311,3 +313,52 @@ class Conv3_2d_resmp(nn.Module):
         out = self.mp(self.relu(out))
         return out
 
+
+
+#################################################
+# for tag ae
+#################################################
+
+
+
+
+
+class WaveEncoder_mtat(nn.Module):
+    def __init__(self, input_channels, conv_channels):
+        super(WaveEncoder_mtat, self).__init__()
+        self.num_class = 128
+
+        # residual convolution
+        self.res1 = Conv3_2d(input_channels, conv_channels, 2)
+        self.res2 = Conv3_2d_resmp(conv_channels, conv_channels, 2)
+        self.res3 = Conv3_2d_resmp(conv_channels, conv_channels, 2)
+        self.res4 = Conv3_2d_resmp(conv_channels, conv_channels, 2)
+        self.res5 = Conv3_2d(conv_channels, conv_channels*2, 2)
+        self.res6 = Conv3_2d_resmp(conv_channels*2, conv_channels*2, (2, 3))
+        self.res7 = Conv3_2d_resmp(conv_channels*2, conv_channels*2, (2, 3))
+
+        # fully connected
+        self.fc_1 = nn.Linear(conv_channels * 2, conv_channels * 2)
+        self.bn = nn.BatchNorm1d(conv_channels * 2)
+        self.fc_2 = nn.Linear(conv_channels * 2, self.num_class)
+        self.activation = nn.ReLU()
+        self.dropout = nn.Dropout(0.5)
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
+        # residual convolution
+        x = self.res1(x)
+        x = self.res2(x)
+        x = self.res3(x)
+        x = self.res4(x)
+        x = self.res5(x)
+        x = self.res6(x)
+        x = self.res7(x)
+        x = x.squeeze(2)
+
+        # global max pooling
+        if x.size(-1) != 1:
+            x = nn.MaxPool1d(x.size(-1))(x)
+        x = x.squeeze(2)
+
+        return x        

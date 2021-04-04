@@ -2,3 +2,6 @@ training/*.out
 models*
 training/__pycache__/*
 training/logs/*
+checkpoints/
+*.pyc
+*.txt

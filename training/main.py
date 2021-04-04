@@ -26,13 +26,15 @@ def main(config):
 
     solver = Solver(data_loader, config)
 
-    print('train')
-    solver.train()
+    print('stage1_train')
+    solver.stage1_train()
+    print('stage2_train')
+    solver.stage2_train()
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
     # model hyper-parameters
     parser.add_argument('--conv_channels', type=int, default=128)
     parser.add_argument('--sample_rate', type=int, default=16000)
@@ -53,7 +55,7 @@ if __name__ == '__main__':
     parser.add_argument('--use_tensorboard', type=int, default=1)
     parser.add_argument('--model_save_path', type=str, default='./../models')
     parser.add_argument('--model_load_path', type=str, default='.')
-    parser.add_argument('--data_path', type=str, default='./data')
+    parser.add_argument('--data_path', type=str, default='../../tf2-music-tagging-models/dataset')
     parser.add_argument('--log_step', type=int, default=20)
 
     config = parser.parse_args()
